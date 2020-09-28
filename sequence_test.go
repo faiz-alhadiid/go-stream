@@ -21,7 +21,7 @@ func TestSequence_Slice(t *testing.T) {
 			s: FromSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}).
 				Filter(func(x int) bool { return x%2 == 0 }).
 				Map(func(x int) int { return x * x }).
-				Take(3),
+				Take(3).(*Sequence),
 			wantSlice: []interface{}{4, 16, 36},
 		},
 		{
@@ -29,7 +29,7 @@ func TestSequence_Slice(t *testing.T) {
 			s: FromSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}).
 				Filter(func(x int) bool { return x%2 == 0 }).
 				Map(func(x int) int { return x * x }).
-				Take(3),
+				Take(3).(*Sequence),
 			args: args{
 				sIns: []interface{}{[]int{}},
 			},
@@ -67,7 +67,7 @@ func TestSequence_Reduce(t *testing.T) {
 			s: FromSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}).
 				Filter(func(x int) bool { return x%2 == 0 }).
 				Map(func(x int) int { return x * x }).
-				Skip(2),
+				Skip(2).(*Sequence),
 			args: args{
 				initial: 999,
 				reducer: func(acc, x int) int {

@@ -5,6 +5,9 @@ import (
 	"reflect"
 )
 
+// Make sure Sequence implements ISequence interface
+var _ ISequence = &Sequence{}
+
 // Sequence ...
 type Sequence struct {
 	seq        chan interface{}
@@ -27,8 +30,11 @@ func (s *Sequence) close() {
 	}
 }
 
+// Err ...
+func (s *Sequence) Err() error { return s.err }
+
 // Map ...
-func (s *Sequence) Map(function interface{}) *Sequence {
+func (s *Sequence) Map(function interface{}) ISequence {
 	f, ok := castFunction(function)
 	if !ok {
 		panic("Failed to cast function")
@@ -42,7 +48,7 @@ func (s *Sequence) Map(function interface{}) *Sequence {
 }
 
 // Filter ...
-func (s *Sequence) Filter(predicate interface{}) *Sequence {
+func (s *Sequence) Filter(predicate interface{}) ISequence {
 	p, ok := castPredicate(predicate)
 	if !ok {
 		panic("Failed to cast predicate")
@@ -56,7 +62,7 @@ func (s *Sequence) Filter(predicate interface{}) *Sequence {
 }
 
 // TakeWhile ...
-func (s *Sequence) TakeWhile(predicate interface{}) *Sequence {
+func (s *Sequence) TakeWhile(predicate interface{}) ISequence {
 	p, ok := castPredicate(predicate)
 	if !ok {
 		panic("Failed to cast predicate")
@@ -70,13 +76,13 @@ func (s *Sequence) TakeWhile(predicate interface{}) *Sequence {
 }
 
 // Take ...
-func (s *Sequence) Take(n int64) *Sequence {
+func (s *Sequence) Take(n int64) ISequence {
 	l := &limitTakeWhile{limit: n}
 	return s.TakeWhile(l.Check)
 }
 
 // Skip ...
-func (s *Sequence) Skip(n int64) *Sequence {
+func (s *Sequence) Skip(n int64) ISequence {
 	skip := &skipPredicate{skip: n}
 	return s.Filter(skip.Check)
 }
