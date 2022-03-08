@@ -2,7 +2,6 @@ package sequence
 
 import (
 	"fmt"
-	"reflect"
 )
 
 // Make sure Sequence implements ISequence interface
@@ -10,11 +9,16 @@ var _ ISequence = &Sequence{}
 
 // Sequence ...
 type Sequence struct {
-	seq        chan interface{}
+	seq        chan any
 	isClosed   bool
 	operations []operation
 	parent     *Sequence
+	isInfinite bool
 	err        error
+}
+
+func (s *Sequence) IsInfinite() bool {
+	return s.isInfinite
 }
 
 func (s *Sequence) close() {
@@ -34,7 +38,7 @@ func (s *Sequence) close() {
 func (s *Sequence) Err() error { return s.err }
 
 // Map ...
-func (s *Sequence) Map(function interface{}) ISequence {
+func (s *Sequence) Map(function any) ISequence {
 	f, ok := castFunction(function)
 	if !ok {
 		panic("Failed to cast function")
@@ -48,7 +52,7 @@ func (s *Sequence) Map(function interface{}) ISequence {
 }
 
 // Filter ...
-func (s *Sequence) Filter(predicate interface{}) ISequence {
+func (s *Sequence) Filter(predicate any) ISequence {
 	p, ok := castPredicate(predicate)
 	if !ok {
 		panic("Failed to cast predicate")
@@ -62,7 +66,7 @@ func (s *Sequence) Filter(predicate interface{}) ISequence {
 }
 
 // TakeWhile ...
-func (s *Sequence) TakeWhile(predicate interface{}) ISequence {
+func (s *Sequence) TakeWhile(predicate any) ISequence {
 	p, ok := castPredicate(predicate)
 	if !ok {
 		panic("Failed to cast predicate")
@@ -78,16 +82,32 @@ func (s *Sequence) TakeWhile(predicate interface{}) ISequence {
 // Take ...
 func (s *Sequence) Take(n int64) ISequence {
 	l := &limitTakeWhile{limit: n}
+	s.isInfinite = false
 	return s.TakeWhile(l.Check)
 }
 
 // Skip ...
 func (s *Sequence) Skip(n int64) ISequence {
 	skip := &skipPredicate{skip: n}
+	s.isInfinite = false
 	return s.Filter(skip.Check)
 }
 
-func (s *Sequence) run(out chan interface{}) {
+func (s *Sequence) FlatMap(fun func(interface{}) ISequence) ISequence {
+	ch := make(chan ISequence)
+	go func() {
+		for seq := range s.Run() {
+			defer fRecover()
+			ch <- fun(seq)
+		}
+		close(ch)
+	}()
+	return &flatSequence{
+		sequences: ch,
+	}
+}
+
+func (s *Sequence) run(out chan any) {
 	var i int
 	var op operation
 
@@ -124,14 +144,15 @@ seq:
 }
 
 // Run runs prepared Sequence
-func (s *Sequence) Run() <-chan interface{} {
-	out := make(chan interface{})
+func (s *Sequence) Run() <-chan any {
+	out := make(chan any)
 	go s.run(out)
 	return out
 }
 
 // Reduce ...
-func (s *Sequence) Reduce(initial interface{}, reducer interface{}) (result interface{}, err error) {
+func (s *Sequence) Reduce(initial any, reducer any) (result any, err error) {
+	result = zero(initial)
 	defer func() {
 		r := recover()
 		s.close()
@@ -141,6 +162,11 @@ func (s *Sequence) Reduce(initial interface{}, reducer interface{}) (result inte
 			err = fmt.Errorf("Reduce error: %w", s.err)
 		}
 	}()
+
+	if s.IsInfinite() {
+		return result, PotentiallyInfiniteError
+	}
+
 	b, ok := castBiFunction(reducer)
 	if !ok {
 		panic("Failed to cast reducer")
@@ -153,7 +179,7 @@ func (s *Sequence) Reduce(initial interface{}, reducer interface{}) (result inte
 }
 
 // ForEach ...
-func (s *Sequence) ForEach(consumer interface{}) (err error) {
+func (s *Sequence) ForEach(consumer any) (err error) {
 	defer func() {
 		r := recover()
 		s.close()
@@ -173,40 +199,32 @@ func (s *Sequence) ForEach(consumer interface{}) (err error) {
 	return
 }
 
-// Slice returns slice
-func (s *Sequence) Slice(sIns ...interface{}) (slice interface{}, err error) {
-	defer func() {
-		r := recover()
-		if r != nil {
-			err = fmt.Errorf("Slice error: %v", r)
-		} else if s.err != nil {
-			err = fmt.Errorf("Slice error: %w", s.err)
-		}
+// CollectSlice collect Sequence result into slice
+func CollectSlice[T any](s ISequence) (arr []T, err error) {
+	if s.IsInfinite() {
+		return nil, PotentiallyInfiniteError
+	}
+
+	s.ForEach(func(o any) {
+		arr = append(arr, o.(T))
+	})
+	return arr, nil
+}
+
+func CollectChan[T any](s ISequence, cap ...int) (c chan T, err error) {
+	if len(cap) == 0 {
+		c = make(chan T)
+	} else {
+		c = make(chan T, cap[0])
+	}
+
+	go func() {
+		s.ForEach(func(o any) {
+			c <- o.(T)
+		})
+
+		close(c)
 	}()
 
-	if len(sIns) == 0 {
-		var arr []interface{}
-		err = s.ForEach(func(val interface{}) {
-			arr = append(arr, val)
-		})
-		slice = arr
-		return
-	}
-
-	rvSlice := reflect.ValueOf(sIns[0])
-	if rvSlice.Kind() != reflect.Slice {
-		err = fmt.Errorf("Slice  error: param is not a slice")
-		return
-	}
-	t := rvSlice.Type().Elem()
-	err = s.ForEach(func(val interface{}) {
-		rvSlice = reflect.Append(rvSlice, nilSafeValueOf(val, t))
-	})
-
-	if err != nil {
-		return
-	}
-
-	slice = rvSlice.Interface()
-	return
+	return c, nil
 }

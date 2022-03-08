@@ -7,21 +7,21 @@ import (
 
 func Test_castFunction(t *testing.T) {
 	type args struct {
-		fun interface{}
+		fun any
 	}
 	tests := []struct {
 		name    string
 		args    args
 		want    Function
 		want1   bool
-		argFunc interface{}
+		argFunc any
 	}{
 		{
 			name: "Is Function",
 			args: args{
-				fun: func(a interface{}) interface{} { return a },
+				fun: func(a any) any { return a },
 			},
-			want:    func(a interface{}) interface{} { return a },
+			want:    func(a any) any { return a },
 			want1:   true,
 			argFunc: "a",
 		},
@@ -53,9 +53,9 @@ func Test_castFunction(t *testing.T) {
 		{
 			name: "Valid func",
 			args: args{
-				fun: func(a string) interface{} { return a },
+				fun: func(a string) any { return a },
 			},
-			want:    func(a interface{}) interface{} { return a },
+			want:    func(a any) any { return a },
 			want1:   true,
 			argFunc: "a",
 		},
@@ -79,21 +79,21 @@ func Test_castFunction(t *testing.T) {
 
 func Test_castPredicate(t *testing.T) {
 	type args struct {
-		fun interface{}
+		fun any
 	}
 	tests := []struct {
 		name    string
 		args    args
 		want    Predicate
 		want1   bool
-		argFunc interface{}
+		argFunc any
 	}{
 		{
 			name: "Is Predicate",
 			args: args{
-				fun: func(a interface{}) bool { return a == "a" },
+				fun: func(a any) bool { return a == "a" },
 			},
-			want:    func(a interface{}) bool { return a == "a" },
+			want:    func(a any) bool { return a == "a" },
 			want1:   true,
 			argFunc: "a",
 		},
@@ -124,7 +124,7 @@ func Test_castPredicate(t *testing.T) {
 		{
 			name: "Output type is not bool",
 			args: args{
-				fun: func(_ interface{}) string { return "" },
+				fun: func(_ any) string { return "" },
 			},
 			want:  nil,
 			want1: false,
@@ -135,7 +135,7 @@ func Test_castPredicate(t *testing.T) {
 			args: args{
 				fun: func(a string) bool { return a == "a" },
 			},
-			want:    func(a interface{}) bool { return a == "a" },
+			want:    func(a any) bool { return a == "a" },
 			want1:   true,
 			argFunc: "a",
 		},
@@ -159,22 +159,22 @@ func Test_castPredicate(t *testing.T) {
 
 func Test_castBiFunction(t *testing.T) {
 	type args struct {
-		fun interface{}
+		fun any
 	}
 	tests := []struct {
 		name     string
 		args     args
 		want     BiFunction
 		want1    bool
-		argFunc1 interface{}
-		argFunc2 interface{}
+		argFunc1 any
+		argFunc2 any
 	}{
 		{
 			name: "Is BiFunction",
 			args: args{
-				fun: func(a interface{}, _ interface{}) interface{} { return a },
+				fun: func(a any, _ any) any { return a },
 			},
-			want:     func(a interface{}, _ interface{}) interface{} { return a },
+			want:     func(a any, _ any) any { return a },
 			want1:    true,
 			argFunc1: "a",
 		},
@@ -206,9 +206,9 @@ func Test_castBiFunction(t *testing.T) {
 		{
 			name: "Valid func",
 			args: args{
-				fun: func(a string, _ string) interface{} { return a },
+				fun: func(a string, _ string) any { return a },
 			},
-			want:     func(a interface{}, _ interface{}) interface{} { return a },
+			want:     func(a any, _ any) any { return a },
 			want1:    true,
 			argFunc1: "a",
 			argFunc2: "b",
@@ -233,7 +233,7 @@ func Test_castBiFunction(t *testing.T) {
 
 func Test_castConsumer(t *testing.T) {
 	type args struct {
-		fun interface{}
+		fun any
 	}
 	tests := []struct {
 		name  string
@@ -244,9 +244,9 @@ func Test_castConsumer(t *testing.T) {
 		{
 			name: "Is Consumer",
 			args: args{
-				fun: func(a interface{}) {},
+				fun: func(a any) {},
 			},
-			want:  func(a interface{}) {},
+			want:  func(a any) {},
 			want1: true,
 		},
 		{
@@ -276,9 +276,9 @@ func Test_castConsumer(t *testing.T) {
 		{
 			name: "Valid func",
 			args: args{
-				fun: func(a string) interface{} { return nil },
+				fun: func(a string) any { return nil },
 			},
-			want:  func(a interface{}) {},
+			want:  func(a any) {},
 			want1: true,
 		},
 	}

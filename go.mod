@@ -1,3 +1,3 @@
 module github.com/faiz-alhadiid/go-sequence
 
-go 1.14
+go 1.18

@@ -18,7 +18,7 @@ type limitTakeWhile struct {
 	limit   int64
 }
 
-func (l *limitTakeWhile) Check(_ interface{}) bool {
+func (l *limitTakeWhile) Check(_ any) bool {
 	t := l.counter < l.limit
 	l.counter++
 	return t
@@ -29,7 +29,7 @@ type skipPredicate struct {
 	skip    int64
 }
 
-func (s *skipPredicate) Check(_ interface{}) bool {
+func (s *skipPredicate) Check(_ any) bool {
 	t := s.counter > s.skip
 	s.counter++
 	return t

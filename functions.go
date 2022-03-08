@@ -4,7 +4,7 @@ import (
 	"reflect"
 )
 
-func nilSafeValueOf(val interface{}, t reflect.Type) reflect.Value {
+func nilSafeValueOf(val any, t reflect.Type) reflect.Value {
 	if val != nil {
 		return reflect.ValueOf(val)
 	}
@@ -12,9 +12,9 @@ func nilSafeValueOf(val interface{}, t reflect.Type) reflect.Value {
 }
 
 // Function represent function with exactly 1 input and 1 output
-type Function = func(interface{}) interface{}
+type Function = func(any) any
 
-func castFunction(fun interface{}) (Function, bool) {
+func castFunction(fun any) (Function, bool) {
 	if fun == nil {
 		return nil, false
 	}
@@ -31,9 +31,9 @@ func castFunction(fun interface{}) (Function, bool) {
 		return nil, false
 	}
 
-	f := func(x interface{}) interface{} {
+	f := func(x any) any {
 		xv := nilSafeValueOf(x, rtFun.In(0))
-		res := rvFun.Call([]reflect.Value{xv})
+		res := rvFun.Call(vSlice(xv))
 		return res[0].Interface()
 	}
 	return f, true
@@ -41,9 +41,9 @@ func castFunction(fun interface{}) (Function, bool) {
 }
 
 // Predicate represents function that have exactly 1 input and 1 output with bool as a type
-type Predicate = func(interface{}) bool
+type Predicate = func(any) bool
 
-func castPredicate(fun interface{}) (Predicate, bool) {
+func castPredicate(fun any) (Predicate, bool) {
 	if fun == nil {
 		return nil, false
 	}
@@ -64,9 +64,9 @@ func castPredicate(fun interface{}) (Predicate, bool) {
 		return nil, false
 	}
 
-	f := func(x interface{}) bool {
+	f := func(x any) bool {
 		xv := nilSafeValueOf(x, rtFun.In(0))
-		res := rvFun.Call([]reflect.Value{xv})
+		res := rvFun.Call(vSlice(xv))
 		return res[0].Bool()
 	}
 	return f, true
@@ -74,9 +74,9 @@ func castPredicate(fun interface{}) (Predicate, bool) {
 }
 
 // Consumer represents function that have 1 input and no output
-type Consumer = func(interface{})
+type Consumer = func(any)
 
-func castConsumer(fun interface{}) (Consumer, bool) {
+func castConsumer(fun any) (Consumer, bool) {
 	if fun == nil {
 		return nil, false
 	}
@@ -94,17 +94,17 @@ func castConsumer(fun interface{}) (Consumer, bool) {
 		return nil, false
 	}
 
-	f := func(x interface{}) {
+	f := func(x any) {
 		xv := nilSafeValueOf(x, rtFun.In(0))
-		rvFun.Call([]reflect.Value{xv})
+		rvFun.Call(vSlice(xv))
 	}
 	return f, true
 }
 
 // BiFunction represent Function with 2 input parameter
-type BiFunction = func(interface{}, interface{}) interface{}
+type BiFunction = func(any, any) any
 
-func castBiFunction(fun interface{}) (BiFunction, bool) {
+func castBiFunction(fun any) (BiFunction, bool) {
 	if fun == nil {
 		return nil, false
 	}
@@ -121,10 +121,10 @@ func castBiFunction(fun interface{}) (BiFunction, bool) {
 		return nil, false
 	}
 
-	f := func(x interface{}, y interface{}) interface{} {
+	f := func(x any, y any) any {
 		xv := nilSafeValueOf(x, rtFun.In(0))
 		yv := nilSafeValueOf(y, rtFun.In(1))
-		res := rvFun.Call([]reflect.Value{xv, yv})
+		res := rvFun.Call(vSlice(xv, yv))
 		return res[0].Interface()
 	}
 	return f, true

@@ -1,13 +1,11 @@
 package sequence
 
-import "reflect"
-
 // Generator represents generator function
-type Generator func(chan<- interface{})
+type Generator func(yield chan<- any)
 
 // Generate genereatse Sequence from provided generator
-func Generate(generator Generator) *Sequence {
-	seq := make(chan interface{})
+func Generate(generator Generator) ISequence {
+	seq := make(chan any)
 	s := &Sequence{
 		seq: seq,
 	}
@@ -22,33 +20,20 @@ func Generate(generator Generator) *Sequence {
 }
 
 // FromChan return sequence from channel
-func FromChan(ch interface{}) *Sequence {
-	rv := reflect.ValueOf(ch)
-	if rv.Kind() != reflect.Chan {
-		panic("ch is not a channel")
-	}
-
-	return Generate(func(yield chan<- interface{}) {
-		for {
-			v, ok := rv.Recv()
-			if !ok {
-				break
-			}
-			safeSend(yield, v)
+func FromChan[T any](ch chan T) ISequence {
+	return Generate(func(yield chan<- any) {
+		for val := range ch {
+			yield <- val
 		}
 		close(yield)
 	})
 }
 
-// FromSlice returns Sequence from slice ...
-func FromSlice(slice interface{}) *Sequence {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		panic("slice is not a Slice")
-	}
-	return Generate(func(yield chan<- interface{}) {
-		for i := 0; i < rv.Len(); i++ {
-			yield <- rv.Index(i).Interface()
+// FromSlice returns Sequence from slice
+func FromSlice[T any](slice []T) ISequence {
+	return Generate(func(yield chan<- any) {
+		for _, val := range slice {
+			yield <- val
 		}
 		close(yield)
 	})

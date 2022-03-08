@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/faiz-alhadiid/go-sequence"
 )
@@ -19,4 +20,11 @@ func main() {
 			return x
 		})
 	fmt.Println(result)
+
+	seq := sequence.
+		FromSlice([]string{"hello", "world"}).
+		Map(func(x string) string { return strings.ToUpper(x) })
+
+	arr, _ := sequence.CollectSlice[string](seq)
+	fmt.Println(arr)
 }
