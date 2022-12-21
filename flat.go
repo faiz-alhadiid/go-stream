@@ -1,59 +1,46 @@
-package sequence
+package stream
 
-type flatSequence struct {
-	sequences  chan ISequence
-	isInfinite bool
-}
-
-func (s *flatSequence) out() chan any {
-	return nil
+type flatStream[T any] struct {
+	Iterator[Iterator[T]]
+	temp Iterator[T]
 }
 
-func (s *flatSequence) Map(fun any) ISequence {
-	seq := FromChan(s.out())
-	return seq.Map(fun)
+func (f *flatStream[T]) Next() (T, bool) {
+	var zero T
+
+	for {
+		if f.temp == nil {
+			temp, ok := f.Iterator.Next()
+			if !ok {
+				return zero, false
+			}
+
+			f.temp = temp
+		}
+
+		val, ok := f.temp.Next()
+		if ok {
+			return val, true
+		} else {
+			f.temp = nil
+		}
+	}
 }
 
-func (s *flatSequence) Filter(predicate any) ISequence {
-	seq := FromChan(s.out())
-	return seq.Filter(predicate)
+func Flatten[T any](it Iterator[Iterator[T]]) Stream[T] {
+	f := &flatStream[T]{
+		Iterator: it,
+	}
+
+	return FromIterator[T](f)
 }
 
-// IsInfinite show if Sequence is potentially infinite
-func (s *flatSequence) IsInfinite() bool {
-	return s.isInfinite
+func FlatMapE[T, V any](it Iterator[T], mapper func(T) (Iterator[V], error)) Stream[V] {
+	stream := MapE(it, mapper)
+	return Flatten[V](stream)
 }
 
-// TakeWhile filter element while predicate returns true
-func (s *flatSequence) TakeWhile(predicate any) ISequence {
-	seq := FromChan(s.out())
-	return seq.TakeWhile(predicate)
-}
-
-// Take takes n element from sequence
-func (s *flatSequence) Take(n int64) ISequence {
-	seq := FromChan(s.out())
-	return seq.Take(n)
-}
-
-// Skip skip n element from sequence
-func (s *flatSequence) Skip(n int64) ISequence {
-	seq := FromChan(s.out())
-	return seq.Skip(n)
-}
-
-// Run runs sequence pipeline and output it to channel
-func (s *flatSequence) Run() <-chan any {
-	return s.out()
-}
-func (s *flatSequence) Reduce(initial any, reducer any) (result any, err error) {
-	seq := FromChan(s.out())
-	return seq.Reduce(initial, reducer)
-}
-func (s *flatSequence) ForEach(consumer any) (err error) {
-	seq := FromChan(s.out())
-	return seq.ForEach(consumer)
-}
-func (s *flatSequence) Err() error {
-	return nil
+func FlatMap[T, V any](it Iterator[T], mapper func(T) Iterator[V]) Stream[V] {
+	mp := noErrMapWrapper[T, Iterator[V]]{mapper}
+	return FlatMapE(it, mp.mapE)
 }
