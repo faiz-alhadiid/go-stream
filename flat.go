@@ -1,11 +1,11 @@
 package stream
 
-type flatStream[T any] struct {
-	Iterator[Iterator[T]]
+type flatStream[T any, Inner Iterator[T]] struct {
+	Iterator[Inner]
 	temp Iterator[T]
 }
 
-func (f *flatStream[T]) Next() (T, bool) {
+func (f *flatStream[T, Inner]) Next() (T, bool) {
 	var zero T
 
 	for {
@@ -27,8 +27,8 @@ func (f *flatStream[T]) Next() (T, bool) {
 	}
 }
 
-func Flatten[T any](it Iterator[Iterator[T]]) Stream[T] {
-	f := &flatStream[T]{
+func Flatten[T any, Inner Iterator[T]](it Iterator[Inner]) Stream[T] {
+	f := &flatStream[T, Inner]{
 		Iterator: it,
 	}
 
@@ -37,7 +37,7 @@ func Flatten[T any](it Iterator[Iterator[T]]) Stream[T] {
 
 func FlatMapE[T, V any](it Iterator[T], mapper func(T) (Iterator[V], error)) Stream[V] {
 	stream := MapE(it, mapper)
-	return Flatten[V](stream)
+	return Flatten[V, Iterator[V]](stream)
 }
 
 func FlatMap[T, V any](it Iterator[T], mapper func(T) Iterator[V]) Stream[V] {

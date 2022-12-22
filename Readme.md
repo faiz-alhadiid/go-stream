@@ -45,9 +45,12 @@ arr := sStr.Slice() // []int{123, 321, 444}
 - `Map[T, V any](s Iterator[T], mapper func(T) V) Stream[V]`
 - `FlatMapE[T, V any](s Iterator[T], mapper func(T) (Iterator[V], error)) Stream[V]`
 - `FlatMap[T, V any](s Iterator[T], mapper func(T) Iterator[V]) Stream[V]`
-- `Flatten[T](s Iterator[Iterator[T]]) Stream[T]`
+- `Flatten[T any, E Iterator[T]](s Iterator[E]) Stream[T]`
+- `Reduce[T, V any](s Iterator[T], init V, reducer func(acc V, each T) V) V`
 
 #### `Stream[T any]` methods:
+- `Stream[T].Next() (T, bool)`
+- `Stream[T].Err() error`
 - `Stream[T].Map(func(T)T) Stream[T]`
 - `Stream[T].MapE(func(T) (T, error)) Stream[T]`
 - `Stream[T].Filter(func(T) bool) Stream[T]`

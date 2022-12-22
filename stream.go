@@ -70,23 +70,11 @@ func (s Stream[T]) Skip(n int) Stream[T] {
 }
 
 func (s Stream[T]) ForEach(f func(value T)) {
-	for {
-		val, ok := s.Next()
-		if !ok {
-			break
-		}
-
-		f(val)
-	}
+	ForEach[T](s, f)
 }
 
 func (s Stream[T]) Reduce(initial T, f func(acc T, each T) (res T)) (result T) {
-	result = initial
-	s.ForEach(func(t T) {
-		result = f(result, t)
-	})
-
-	return result
+	return Reduce[T](s, initial, f)
 }
 
 func (s Stream[T]) Slice() []T {
